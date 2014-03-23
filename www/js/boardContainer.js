@@ -1,21 +1,65 @@
 ﻿(function () {
-    CAAT.BoardContainer = function () {
-        CAAT.BoardContainer.superclass.constructor.call(this);
+	function randomArrayList(length){
+		var output = [];
+		var firstArray = [];
+		for(var i=0;i<length;i++){
+			firstArray.push(i);
+		}
+		for(var i=0;i<length;i++){
+			var index = randomNumber(firstArray.length);
+			output.push(firstArray[index]);
+			firstArray.splice(index,1);
+		}
+		return output;
+	}
+	function randomNumber(number){
+		var output = (Math.random()*number)<<0;
+		if(output==number) output = 0;
+		return output;
+	}
+	function arrayDiff(array,checkArr) {
+	    return array.filter(function(i) {return !(checkArr.indexOf(i) > -1);});
+	}
+	function indexOfArray(array,propertyArray){
+		for(var i=0;i<array.length;i++){
+			if(compareArray(array[i],propertyArray),true) return i;
+		}
+		return -1;
+	}
+	function compareArray(array1, array2, sort){
+		if(sort) {
+			array1 = array1.sort();
+			array2 = array2.sort();
+		}
+		if(array1.length == 0) return false;
+		console.log("1");
+		if(array1.length!= array2.length) return false;
+		console.log("2");
+		for(var i=0;i<array1.length;i++){
+			if(array1[i] != array2[i]) return false;
+			console.log("3");
+		}
+		return true;
+	}
+    BKGM.BoardContainer = function () {
         return this;
     }
 
-    CAAT.BoardContainer.prototype = {
+    BKGM.BoardContainer.prototype = {
         initialize: function (director,posX,posY,width,height,boardWidth,boardHeight) {
 			var self = this;
             this.director = director;
-            this.setBounds(posX,posY,width,height);
+            this.width=width;
+            this.height=height;
+            this.x=posX;
+            this.y=posY;
 			this.gameOver = false;
 			this.gameWin = false;
-			var marginWidth = 15;
-			var marginHeight = 15;
-			this.marginWidth = 15;
-			this.marginHeight = 15;
-			this.textSize = 35;
+			var marginWidth = 15*director.SCALE;
+			var marginHeight = 15*director.SCALE;
+			this.marginWidth = 15*director.SCALE;
+			this.marginHeight = 15*director.SCALE;
+			this.textSize = 35*director.SCALE;
 			this.boardWidth = boardWidth;
 			this.boardHeight = boardHeight;
 			var cellWidth = (width-marginWidth*(boardWidth+1))/boardWidth;
@@ -33,29 +77,91 @@
 			this.animationMove = false;
 			this.animationTime = 150;
 			this.resetBoard();
-			var controlKey = [[CAAT.KEYS.UP,CAAT.KEYS.w],
-								[CAAT.KEYS.DOWN,CAAT.KEYS.s],
-								[CAAT.KEYS.LEFT,CAAT.KEYS.a],
-								[CAAT.KEYS.RIGHT,CAAT.KEYS.d]];
-			CAAT.registerKeyListener(
-			function event(e){
-				if(e.getAction()=="down"){
-					var keyCode = e.getKeyCode();
-					var specialKey = [CAAT.KEYS.F5,CAAT.KEYS.F12,CAAT.KEYS.BACKSPACE];
-					if(specialKey.indexOf(keyCode)!=-1) return;
-					if(self.animationAdd||self.animationMove) self.cancelAnimation();
-					if(self.gameOver) return;
-					e.preventDefault();
-					//if(keyCode == CAAT.KEYS.ENTER) self.addRandomNumber();
-					for(var i=0;i<controlKey.length;i++){
-						if(controlKey[i].indexOf(keyCode)!=-1){
-							self.animation(i);
-							break;
-						}
+			var controlKey = [[BKGM.KEYS.UP,BKGM.KEYS.w],
+								[BKGM.KEYS.DOWN,BKGM.KEYS.s],
+								[BKGM.KEYS.LEFT,BKGM.KEYS.a],
+								[BKGM.KEYS.RIGHT,BKGM.KEYS.d]];
+			// BKGM.registerKeyListener(
+			// function event(e){
+			// 	if(e.getAction()=="down"){
+			// 		var keyCode = e.getKeyCode();
+			// 		var specialKey = [BKGM.KEYS.F5,BKGM.KEYS.F12,BKGM.KEYS.BACKSPACE];
+			// 		if(specialKey.indexOf(keyCode)!=-1) return;
+			// 		if(self.animationAdd||self.animationMove) self.cancelAnimation();
+			// 		if(self.gameOver) return;
+			// 		e.preventDefault();
+			// 		//if(keyCode == BKGM.KEYS.ENTER) self.addRandomNumber();
+			// 		for(var i=0;i<controlKey.length;i++){
+			// 			if(controlKey[i].indexOf(keyCode)!=-1){
+			// 				self.animation(i);
+			// 				break;
+			// 			}
+			// 		}
+			// 	}
+			// }
+			// )
+			director.keyDown=function(e){
+				var keyCode = e.keyCode;
+				var specialKey = [BKGM.KEYS.F5,BKGM.KEYS.F12,BKGM.KEYS.BACKSPACE];
+				if(specialKey.indexOf(keyCode)!=-1) return;
+				if(self.animationAdd||self.animationMove) self.cancelAnimation();
+				if(self.gameOver && keyCode == BKGM.KEYS.ENTER) self.resetBoard();
+				if(self.gameOver) return;
+				e.preventDefault();				
+				for(var i=0;i<controlKey.length;i++){
+					if(controlKey[i].indexOf(keyCode)!=-1){
+						self.animation(i);
+						break;
 					}
 				}
 			}
-			)
+			director.swipe=function(type){
+				var keyCode;
+    			switch(type){
+    				case 'UP'	: keyCode=BKGM.KEYS.UP;		break;
+    				case 'DOWN'	: keyCode=BKGM.KEYS.DOWN;	break;
+    				case 'LEFT'	: keyCode=BKGM.KEYS.LEFT;	break;
+    				case 'RIGHT': keyCode=BKGM.KEYS.RIGHT;	break;
+    			}
+    			for(var i=0;i<controlKey.length;i++){
+					if(controlKey[i].indexOf(keyCode)!=-1){
+						self.animation(i);
+						break;
+					}
+				}
+			}
+			// Hammer(director.canvas).on("swipeup", function(e) {
+			//     for(var i=0;i<controlKey.length;i++){
+			// 		if(controlKey[i].indexOf(BKGM.KEYS.UP)!=-1){
+			// 			self.animation(i);
+			// 			break;
+			// 		}
+			// 	}
+			// });
+			// Hammer(director.canvas).on("swipedown", function(e) {
+			//     for(var i=0;i<controlKey.length;i++){
+			// 		if(controlKey[i].indexOf(BKGM.KEYS.DOWN)!=-1){
+			// 			self.animation(i);
+			// 			break;
+			// 		}
+			// 	}
+			// });
+			// Hammer(director.canvas).on("swipeleft", function(e) {
+			//     for(var i=0;i<controlKey.length;i++){
+			// 		if(controlKey[i].indexOf(BKGM.KEYS.LEFT)!=-1){
+			// 			self.animation(i);
+			// 			break;
+			// 		}
+			// 	}
+			// });
+			// Hammer(director.canvas).on("swiperight", function(e) {
+			//     for(var i=0;i<controlKey.length;i++){
+			// 		if(controlKey[i].indexOf(BKGM.KEYS.RIGHT)!=-1){
+			// 			self.animation(i);
+			// 			break;
+			// 		}
+			// 	}
+			// });
 			this.maxScore = 0;
 			var buttonWidth = 100;
 			var buttonHeight = 30;
@@ -74,25 +180,33 @@
 				ctx.strokeStyle = "#FFF";
 				roundedRect(ctx,0,0,this.width,this.height,5,true,true);
 			}
-			this.replayButton = new CAAT.MyButton().
-										initialize(director,this.width/2-buttonWidth/2,this.height/2- buttonHeight/2,buttonWidth,buttonHeight,
-													"Try again?", "center","#FFF","19px Arial",
-													normalPaint,overPaint,pressPaint,normalPaint,
-													function(){},function(){},
-													function(button,ex,ey){	// mouse Up
-														if(button.AABB.contains(ex,ey))self.resetBoard();
-													}).setVisible(false);
-			this.addChild(this.replayButton);
+			// this.replayButton = new BKGM.MyButton().
+			// 							initialize(director,this.width/2-buttonWidth/2,this.height/2- buttonHeight/2,buttonWidth,buttonHeight,
+			// 										"Try again?", "center","#FFF","19px Arial",
+			// 										normalPaint,overPaint,pressPaint,normalPaint,
+			// 										function(){},function(){},
+			// 										function(button,ex,ey){	// mouse Up
+			// 											if(button.AABB.contains(ex,ey))self.resetBoard();
+			// 										}).setVisible(false);
+			// this.addChild(this.replayButton);
+			director.touchStart=function(){
+				if(self.gameOver) 
+					self.resetBoard();
+			}
+			director.mouseDown=function(){
+				if(self.gameOver) 
+					self.resetBoard();
+			}
             return this;
         },
 		resetBoard: function(){
 			this.cellList = [];
 			this.gameOver = false;
 			this.gameWin = false;
-			if(this.replayButton)this.replayButton.setVisible(false);
 			this.score = 0;
 			this.addRandomNumber();
 			this.addRandomNumber();
+			this.director.ctx.globalAlpha=1;
 		},
 		animation: function(direction){
 			var cellBoard = this.cellBoard;
@@ -286,6 +400,7 @@
 			newCell.newNumber =  newCell.number;
 			newCell.animationAdd = true;
 			newCell.animationStart = this.director.time;
+			// console.log(this.director.time)
 			this.cellList.push(newCell);
 			//console.log(newCell.number+": "+newCell.positionX+"-"+newCell.positionY+" spawned");
 			//console.log("_______________________________________________");
@@ -357,14 +472,22 @@
 			this.addRandomNumber();
 		},
         paint: function (director,time) {
-			CAAT.BoardContainer.superclass.paint.call(this, director, time);
+			// BKGM.BoardContainer.superclass.paint.call(this, director, time);
+			// console.log(this.textSize)
 			var ctx = director.ctx;
 			ctx.fillStyle = "rgb(187,173,160)";
 			ctx.fillRect(0,0,this.width,this.height);
 			ctx.fillStyle = "#000";
 			ctx.font = "20px Arial";
-			ctx.fillText("SCORE: "+this.score, this.width + 20,30);
-			ctx.fillText("HIGHSCORE: "+this.maxScore,this.width + 20,60);
+			if(director.WIDTH<director.HEIGHT) {
+				ctx.fillText("SCORE: "+this.score, 60,this.height + 40);
+				ctx.fillText("HIGHSCORE: "+this.maxScore,60,this.height + 80);
+			} else {
+				ctx.fillText("SCORE: "+this.score, this.height + 20,30);
+				ctx.fillText("HIGHSCORE: "+this.maxScore,this.width + 20,60);
+			}
+
+			
 			for(var i=0;i<this.cellBoard.length;i++){
 				var tempCell = this.cellBoard[i];
 				ctx.fillStyle = "rgb(204,192,179)";
@@ -376,6 +499,7 @@
 				var rectX = tempCell.x; rectY = tempCell.y;
 				var rectWidth = tempCell.width; rectHeight = tempCell.height;
 				var textSize = this.textSize;
+
 				if(tempCell.animationMove){
 					var elapsedTime = director.time - tempCell.animationStart;
 					var ratio = elapsedTime/this.animationTime;
@@ -419,12 +543,12 @@
 				ctx.font = textSize+"px Arial";
 				ctx.fillStyle = color.number;
 				var textWidth = ctx.measureText(text).width;
+				// console.log(textSize)
 				ctx.fillText(text,rectX + rectWidth/2 - textWidth/2,rectY + rectHeight/2+textSize/3);
 			}
 			if(this.gameOver){
 				var elapsedTime = director.time - this.gameOverTime;
 				var ratio = elapsedTime/500;
-				if(ratio>1&&this.replayButton.visible==false) this.replayButton.setVisible(true);
 				if(ratio>1) ratio = 1;
 				ctx.globalAlpha = ratio*0.5;
 				ctx.fillStyle = "#FFF";
@@ -439,7 +563,6 @@
             return this;
         }
     }
-    extend(CAAT.BoardContainer, CAAT.Foundation.ActorContainer);
 })();
 var numberColor = {
 	2:{bg: "rgb(238,228,218)", number: "rgb(119,110,101)"},

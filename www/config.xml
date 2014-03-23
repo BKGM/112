@@ -51,8 +51,8 @@
     -->
    
     <gap:plugin name="com.phonegap.plugins.facebookconnect">
-	    <param name="APP_ID" value="296632137153437" />
-	    <param name="APP_NAME" value="White Drop" />
+	    <param name="APP_ID" value="666473616723788" />
+	    <param name="APP_NAME" value="1+1=2" />
 	</gap:plugin>
     <!-- Define app icon for each platform. -->
     <icon src="res/icon/android/icon-36-ldpi.png"   gap:platform="android"    gap:density="ldpi" />
