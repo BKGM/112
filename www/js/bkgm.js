@@ -344,7 +344,7 @@ var BKGM = BKGM||{};
             if(this.mouseUp) this.mouseUp(e);
         },
         _mouseDrag:function(e){
-            if(this.mouseDown) this.mouseDrag(e);
+            if(this.mouseDrag) this.mouseDrag(e);
         }
 
         
@@ -474,11 +474,17 @@ var BKGM = BKGM||{};
             //         return;
             //     }
             // };
-            if(_this._mouseDown) _this._mouseDown(e);
+            if(_this.states && _this.states._mouseDown) _this.states._mouseDown(e); else
+                    if(_this._mouseDown) _this._mouseDown(e);
         }, false);
         _this.canvas.addEventListener('mousemove', function(event) {
-            if(_this._mouseDown) _this.currentTouch.state="MOVING";
-            if(_this.mouseDrag) _this.mouseDrag(checkMousePos(event,_this));
+            var e=checkMousePos(event,_this);
+            if(_this._ismouseDown) _this.currentTouch.state="MOVING";
+            if(this._ismouseDown){
+                if(_this.states && _this.states._mouseDrag) _this.states._mouseDrag(e); else
+                    if(_this._mouseDrag) _this._mouseDrag(e);
+            }
+            
         }, false);
         _this.canvas.addEventListener('mouseup', function(event) {
             var e=checkMousePos(event,_this);
@@ -490,8 +496,8 @@ var BKGM = BKGM||{};
             //         return;
             //     }
             // };
-
-            if(_this._mouseUp) _this._mouseUp(e);
+            if(_this.states && _this.states._mouseUp) _this.states._mouseUp(e); else
+                    if(_this._mouseUp) _this._mouseUp(e);
         }, false);
     }
     var addKeyEvent=function(_this){

@@ -1,0 +1,12 @@
+{
+  "name": "1+1=2",
+  "version": "1",
+  "main": "web.html",
+  "window": {
+    "frame": true,
+    "width": 1024,
+    "height": 600,
+    "toolbar": false,
+    "resizable": false
+  }
+}

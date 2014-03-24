@@ -498,7 +498,7 @@
 				var tempCell = this.cellList[i];
 				var rectX = tempCell.x; rectY = tempCell.y;
 				var rectWidth = tempCell.width; rectHeight = tempCell.height;
-				var textSize = this.textSize;
+				var textSize = this.textSize*4/(this.boardWidth);
 
 				if(tempCell.animationMove){
 					var elapsedTime = director.time - tempCell.animationStart;
