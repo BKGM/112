@@ -29,14 +29,15 @@
             
             var director;
             var _fb;
-            
+            BKGM.DeviceMotion=1;	
             
             var Game = new BKGM({
 			    setup: function(){
 			        director = new BKGM.States();
 			        var Game = this;
 			        // Game.Codea=true;
-			        BKGM.debug=1;			       
+			        BKGM.debug=1;	
+			        	       
 			        if(BKGM.FBConnect)
 			       	// _fb = new BKGM.FBConnect();
 			       	// _fb.init({appId:"666473616723788"});

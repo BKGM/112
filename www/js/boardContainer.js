@@ -68,7 +68,7 @@
 			this.cellHeight = cellHeight;
 			var cellBoard = [];
 			for(var i=0;i<boardWidth*boardHeight;i++){
-				var tempCell = this.initCell(i);
+				var tempCell = this.initCell(i,0);
 				cellBoard.push(tempCell);
 			}
 			this.cellList = [];
@@ -165,21 +165,21 @@
 			this.maxScore = 0;
 			var buttonWidth = 100;
 			var buttonHeight = 30;
-			var normalPaint = function(ctx){
-				ctx.fillStyle = "#24D";
-				ctx.strokeStyle = "#FFF";
-				roundedRect(ctx,0,0,this.width,this.height,5,true,true);
-			}
-			var overPaint = function(ctx){
-				ctx.fillStyle = "#35E";
-				ctx.strokeStyle = "#FFF";
-				roundedRect(ctx,0,0,this.width,this.height,5,true,true);
-			}
-			var pressPaint = function(ctx){
-				ctx.fillStyle = "#13C";
-				ctx.strokeStyle = "#FFF";
-				roundedRect(ctx,0,0,this.width,this.height,5,true,true);
-			}
+			// var normalPaint = function(ctx){
+			// 	ctx.fillStyle = "#24D";
+			// 	ctx.strokeStyle = "#FFF";
+			// 	roundedRect(ctx,0,0,this.width,this.height,5,true,true);
+			// }
+			// var overPaint = function(ctx){
+			// 	ctx.fillStyle = "#35E";
+			// 	ctx.strokeStyle = "#FFF";
+			// 	roundedRect(ctx,0,0,this.width,this.height,5,true,true);
+			// }
+			// var pressPaint = function(ctx){
+			// 	ctx.fillStyle = "#13C";
+			// 	ctx.strokeStyle = "#FFF";
+			// 	roundedRect(ctx,0,0,this.width,this.height,5,true,true);
+			// }
 			// this.replayButton = new BKGM.MyButton().
 			// 							initialize(director,this.width/2-buttonWidth/2,this.height/2- buttonHeight/2,buttonWidth,buttonHeight,
 			// 										"Try again?", "center","#FFF","19px Arial",
@@ -223,145 +223,182 @@
 							var mergeCell = false;
 							var newPosY = 0;
 							var cellEach = cellList[i];
-							for(var j=i-1;j>=0;j--){
-								if(cellList[j].positionX==cellEach.positionX){
-									if((cellList[j].number==cellEach.number)&&(cellList[j].newNumber==cellEach.number)) {
-										mergeCell = true;
-										newPosY = cellList[j].positionY;
-										cellList[j].deleted = true;
-										cellEach.newNumber=2*cellEach.number;
-										cellList[j].newNumber=2*cellEach.number;
+							if (cellEach.type == 0) {   	// Ô có thể di chuyện // Todo: type -> canMove
+								for(var j=i-1;j>=0;j--){
+									if(cellList[j].positionX==cellEach.positionX){
+										if((cellList[j].number==cellEach.number)&&(cellList[j].newNumber==cellEach.number)) {
+											console.log('up:1')
+											mergeCell = true;
+											newPosY = cellList[j].positionY;
+											cellList[j].deleted = true;
+											cellEach.newNumber=2*cellEach.number;
+											cellList[j].newNumber=2*cellEach.number;
+										}
+										else if(cellList[j].positionY == cellEach.positionY-1) {
+											console.log('up:2')
+											changePosition = false;
+										}
+										else {
+											console.log('up:3')
+											newPosY = cellList[j].positionY+1;
+										}
+										break;
 									}
-									else if(cellList[j].positionY == cellEach.positionY-1) changePosition = false;
-									else {
-										newPosY = cellList[j].positionY+1;
-									}
-									break;
 								}
-							}
-							if(changePosition){
-								cellEach.positionY = newPosY;
-								cellEach.newX = cellEach.x;
-								cellEach.newY = (newPosY+1)*this.marginHeight+newPosY*this.cellHeight;
-								cellEach.id = newPosY*this.boardWidth+cellEach.positionX;
-								cellEach.animationMove = true;
-								this.animationMove = true;
-								cellEach.animationStart = this.director.time;
+								if(changePosition){
+									cellEach.positionY = newPosY;
+									cellEach.newX = cellEach.x;
+									cellEach.newY = (newPosY+1)*this.marginHeight+newPosY*this.cellHeight;
+									cellEach.id = newPosY*this.boardWidth+cellEach.positionX;
+									cellEach.animationMove = true;
+									this.animationMove = true;
+									cellEach.animationStart = this.director.time;
+								}
 							}
 						}
 					}
 					break;
 				case 1:	//down
-					//console.log("down");
+					//console.log("down");					
 					for(var i=cellList.length-1;i>=0;i--){
 						if(cellList[i].positionY<boardHeight-1){
 							var changePosition = true;
 							var mergeCell = false;
 							var newPosY = boardHeight-1;
 							var cellEach = cellList[i];
-							for(var j=i+1;j<cellList.length;j++){
-								if(cellList[j].positionX==cellEach.positionX){
-									if((cellList[j].number==cellEach.number)&&(cellList[j].newNumber==cellEach.number)) {
-										mergeCell = true;
-										newPosY = cellList[j].positionY;
-										cellList[j].deleted = true;
-										cellEach.newNumber=2*cellEach.number;
-										cellList[j].newNumber=2*cellEach.number;
+							if (cellEach.type == 0) {   	// Ô có thể di chuyện // Todo: type -> canMove
+								for(var j=i+1;j<cellList.length;j++){
+									if(cellList[j].positionX==cellEach.positionX){
+										if((cellList[j].number==cellEach.number)&&(cellList[j].newNumber==cellEach.number)) {
+											console.log('down:1')
+											mergeCell = true;
+											newPosY = cellList[j].positionY;
+											cellList[j].deleted = true;
+											cellEach.newNumber=2*cellEach.number;
+											cellList[j].newNumber=2*cellEach.number;
+										}
+										else if(cellList[j].positionY == cellEach.positionY+1) {
+											console.log('down:2')
+											changePosition = false;
+										}
+										else {
+											console.log('down:3')
+											newPosY = cellList[j].positionY-1;
+										}
+										break;
 									}
-									else if(cellList[j].positionY == cellEach.positionY+1) changePosition = false;
-									else {
-										newPosY = cellList[j].positionY-1;
-									}
-									break;
 								}
-							}
-							if(changePosition){
-								cellEach.positionY = newPosY;
-								cellEach.newX = cellEach.x;
-								cellEach.newY = (newPosY+1)*this.marginHeight+newPosY*this.cellHeight;
-								cellEach.id = newPosY*this.boardWidth+cellEach.positionX;
-								cellEach.animationMove = true;
-								this.animationMove = true;
-								cellEach.animationStart = this.director.time;
+								if(changePosition){
+									cellEach.positionY = newPosY;
+									cellEach.newX = cellEach.x;
+									cellEach.newY = (newPosY+1)*this.marginHeight+newPosY*this.cellHeight;
+									cellEach.id = newPosY*this.boardWidth+cellEach.positionX;
+									cellEach.animationMove = true;
+									this.animationMove = true;
+									cellEach.animationStart = this.director.time;
+								}
 							}
 						}
 					}
 					break;
 				case 2:	//left
-					//console.log("left");
+					// Duyệt qua tất cả các ô
 					for(var i=0;i<cellList.length;i++){
-						if(cellList[i].positionX>0){
-							var changePosition = true;
-							var mergeCell = false;
-							var newPosX = 0;
-							var cellEach = cellList[i];
-							for(var j=i-1;j>=0;j--){
-								if(cellList[j].positionY==cellEach.positionY){
-									if((cellList[j].number==cellEach.number)&&(cellList[j].newNumber==cellEach.number)) {
-										mergeCell = true;
-										newPosX = cellList[j].positionX;
-										cellList[j].deleted = true;
-										cellEach.newNumber=2*cellEach.number;
-										cellList[j].newNumber=2*cellEach.number;
+						if(cellList[i].positionX>0){ 	// Nếu không ở cạnh trái
+							var cellEach = cellList[i];	// Ghi nhận ô hiện tại
+
+							if (cellEach.type == 0) {   	// Ô có thể di chuyện // Todo: type -> canMove
+								var changePosition = true; 	// Mặc định chạy về đầu
+								var mergeCell = false; 		// Mặc định không gộp 2 ô với nhau
+								var newPosX = 0; 			// Khởi tạo vị trí mới
+								for(var j=i-1;j>=0;j--){ 	// Tìm 1 ô bên trái cùng hàng
+									if(cellList[j].positionY==cellEach.positionY){
+										// Điều kiện gộp
+										if(//(cellList[j].layer==cellEach.layer)&& // Nếu hai ô cùng layer
+											// Nếu hai ô cùng số
+											(cellList[j].number==cellEach.number)&&	
+											(cellList[j].newNumber==cellEach.number)) {
+											console.log('left:1')
+											mergeCell = true;					// Ghi nhận gộp 2 ô
+											newPosX = cellList[j].positionX;	// Ghi nhận vị trí mới của ô cellEach
+											cellList[j].deleted = true;			// Ghi nhận xóa ô bên trái
+											cellEach.newNumber=2*cellEach.number;	// Ghi nhận giá trị mới
+											cellList[j].newNumber=2*cellEach.number;// GHi nhận giá trị mới
+										}
+										// Điều kiện không di chuyển
+										// Hai ô không gộp nhưng đứng cạnh nhau
+										else if(cellList[j].positionX == cellEach.positionX-1) {
+											console.log('left:2')
+											changePosition = false;
+										} else { // Di chuyển về vị trí cạnh ô gần nhất bên trái
+											console.log('left:3')
+											newPosX = cellList[j].positionX+1;
+										}
+										break; // Đã tìm thấy
 									}
-									else if(cellList[j].positionX == cellEach.positionX-1) changePosition = false;
-									else {
-										newPosX = cellList[j].positionX+1;
-									}
-									break;
 								}
-							}
-							if(changePosition){
-								cellEach.positionX = newPosX;
-								cellEach.newY = cellEach.y;
-								cellEach.newX = (newPosX+1)*this.marginWidth+newPosX*this.cellWidth;
-								cellEach.id = newPosX+this.boardWidth*cellEach.positionY;
-								cellEach.animationMove = true;
-								this.animationMove = true;
-								cellEach.animationStart = this.director.time;
+
+								if (changePosition) { // Nếu được ghi nhận cần di chuyển
+									cellEach.positionX = newPosX; // Cập nhật vị trí mới
+									// Ghi nhận vị trí mới để di chuyển đến
+									// cellEach.newY = cellEach.y;
+									// Tính toán vị trí thực tế trên canvas để vẽ
+									cellEach.newX = (newPosX+1)*this.marginWidth+newPosX*this.cellWidth;
+									// Cập nhật id
+									cellEach.id = newPosX+this.boardWidth*cellEach.positionY;
+									cellEach.animationMove = true;	//Flag
+									this.animationMove = true;		//Flag
+									cellEach.animationStart = this.director.time; // Bắt đầu animation
+								}
 							}
 						}
 					}
 					break;
 				case 3:	//right
-					//console.log("right");
 					for(var i=cellList.length-1;i>=0;i--){
 						if(cellList[i].positionX<boardWidth-1){
 							var changePosition = true;
 							var mergeCell = false;
 							var newPosX = boardWidth-1;
 							var cellEach = cellList[i];
-							for(var j=i+1;j<cellList.length;j++){
-								if(cellList[j].positionY==cellEach.positionY){
-									if((cellList[j].number==cellEach.number)&&(cellList[j].newNumber==cellEach.number)) {
-										mergeCell = true;
-										newPosX = cellList[j].positionX;
-										cellList[j].deleted = true;
-										cellEach.newNumber=2*cellEach.number;
-										cellList[j].newNumber=2*cellEach.number;
+							if (cellEach.type == 0) {   	// Ô có thể di chuyện // Todo: type -> canMove
+								for(var j=i+1;j<cellList.length;j++){
+									if(cellList[j].positionY==cellEach.positionY){
+										if((cellList[j].number==cellEach.number)&&(cellList[j].newNumber==cellEach.number)) {
+											console.log('right:1')
+											mergeCell = true;
+											newPosX = cellList[j].positionX;
+											cellList[j].deleted = true;
+											cellEach.newNumber=2*cellEach.number;
+											cellList[j].newNumber=2*cellEach.number;
+										}
+										else if(cellList[j].positionX == cellEach.positionX+1) {
+											console.log('right:2')
+											changePosition = false;
+										}
+										else {
+											console.log('right:3')
+											newPosX = cellList[j].positionX-1;
+										}
+										break;
 									}
-									else if(cellList[j].positionX == cellEach.positionX+1) changePosition = false;
-									else {
-										newPosX = cellList[j].positionX-1;
-									}
-									break;
 								}
-							}
-							if(changePosition){
-								cellEach.positionX = newPosX;
-								cellEach.newY = cellEach.y;
-								cellEach.newX = (newPosX+1)*this.marginWidth+newPosX*this.cellWidth;
-								cellEach.id = newPosX+this.boardWidth*cellEach.positionY;
-								cellEach.animationMove = true;
-								this.animationMove = true;
-								cellEach.animationStart = this.director.time;
+								if(changePosition){
+									cellEach.positionX = newPosX;
+									cellEach.newY = cellEach.y;
+									cellEach.newX = (newPosX+1)*this.marginWidth+newPosX*this.cellWidth;
+									cellEach.id = newPosX+this.boardWidth*cellEach.positionY;
+									cellEach.animationMove = true;
+									this.animationMove = true;
+									cellEach.animationStart = this.director.time;
+								}
 							}
 						}
 					}
 					break;
 			}
 		},
-		initCell: function(cellIndex){
+		initCell: function(cellIndex,type,layer){
 			var positionX = cellIndex%this.boardWidth;
 			var positionY = (cellIndex/this.boardWidth)<<0;
 			var tempCell = {};
@@ -373,6 +410,8 @@
 			tempCell.height = this.cellHeight;
 			tempCell.positionX = positionX;
 			tempCell.positionY = positionY;
+			tempCell.type=type;
+			tempCell.layer=layer||0;
 			tempCell.id = cellIndex;
 			return tempCell;
 		},
@@ -393,7 +432,8 @@
 			var randomArr = randomArrayList(this.boardHeight*this.boardWidth);
 			var diffArray = arrayDiff(randomArr,indexArr);
 			var randomIndex = diffArray[randomNumber(diffArray.length)];
-			var newCell = this.initCell(randomIndex);
+			var randomType=Math.random()*2>>0;
+			var newCell = this.initCell(randomIndex,randomType,0);
 			numberArray = [2,4,8,16,32,64,128,256,512];
 			//newCell.number =  numberArray[randomNumber(numberArray.length)];
 			newCell.number =  Math.random() < 0.9 ? 2 : 4;
@@ -538,6 +578,7 @@
 				var text = tempCell.number;
 				var color = numberColor[text];
 				if(typeof color == "undefined") color = numberColor[2];
+				if(tempCell.type==1) color=numberColor['den'];
 				ctx.fillStyle = color.bg;
 				ctx.fillRect(rectX,rectY,rectWidth,rectHeight);
 				ctx.font = textSize+"px Arial";
@@ -565,6 +606,7 @@
     }
 })();
 var numberColor = {
+	'den':{bg: "rgb(0,0,0)", number: "rgb(255,255,255)"},
 	2:{bg: "rgb(238,228,218)", number: "rgb(119,110,101)"},
 	4:{bg: "rgb(237,224,200)", number: "rgb(119,110,101)"},
 	8:{bg: "rgb(242,177,121)", number: "rgb(249,246,242)"},

@@ -67,6 +67,7 @@ var BKGM = BKGM||{};
         BKGM.SINGLE_TOUCH=0;
         BKGM.MULTI_TOUCH=1;
         BKGM.TYPE_TOUCH=BKGM.SINGLE_TOUCH;
+        
         if(BKGM.DeviceMotion)
         if ((window.DeviceMotionEvent) || ('listenForDeviceMovement' in window)) {
             window.addEventListener('devicemotion', function(eventData){
