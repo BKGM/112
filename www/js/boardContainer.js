@@ -41,20 +41,48 @@
 		}
 		return true;
 	}
+	// type = -2: rỗng, 0: thường, 1: gạch, 2: tường,3: ô 0, 4: siêu cứng, 5: x2, 6: ô bom, 7: ô mìn
+	var mapType = [
+		[1, 1, 0, 1, 0, 1, 1, 1],
+		[1, 1, 0, 0, 0, 1, 1, 1],
+		[0, 0, 0, 0, 0, 0, 0, 0],
+		[1, 0, 0, 0, 0, 0, 1, 1],
+		[0, 0, 0, 0, 0, 0, 0, 0],
+		[1, 1, 0, 0, 0, 0, 1, 1],
+		[1, 1, 0, 1, 0, 1, 1, 1],
+		[1, 1, 0, 1, 0, 1, 1, 1],
+	];
+	var mapMovable = [0, 1, 1, 0, 1, 0, 0, 1];
+	var randomForCell=function(level){
+		var percent=0;
+		var random=Math.random();
+		var randomCell=map[level].randomCell;
+		for(var x in randomCell){
+			percent+=randomCell[x].percent;
+			if(random<percent){
+				return {type:randomCell[x].type,number:randomCell[x].number};
+			}
+		}
+		if (percent<1) alert("DKM, tong ko bang 1 ak?")
+	}
     BKGM.BoardContainer = function () {
         return this;
     }
 
     BKGM.BoardContainer.prototype = {
-        initialize: function (director,posX,posY,width,height,boardWidth,boardHeight) {
+        initialize: function (level,director,posX,posY,width,height,boardWidth,boardHeight) {
 			var self = this;
+			BKGM.fnListWin.board=this; // init fnListWin
+			BKGM.fnListLost.board=this; // init fnListLost			
+			this.level=level; // level của màn chơi			
+			this.maxLvl=level;
             this.director = director;
             this.width=width;
             this.height=height;
             this.x=posX;
             this.y=posY;
-			this.gameOver = false;
-			this.gameWin = false;
+			this.gameOver = false; // game kết thúc chưa
+			this.gameWin = false; // thắng hay thua?
 			var marginWidth = 15*director.SCALE;
 			var marginHeight = 15*director.SCALE;
 			this.marginWidth = 15*director.SCALE;
@@ -68,7 +96,7 @@
 			this.cellHeight = cellHeight;
 			var cellBoard = [];
 			for(var i=0;i<boardWidth*boardHeight;i++){
-				var tempCell = this.initCell(i,0);
+				var tempCell = this.initCell(i);
 				cellBoard.push(tempCell);
 			}
 			this.cellList = [];
@@ -100,12 +128,16 @@
 			// 	}
 			// }
 			// )
-			director.keyDown=function(e){
+			this.keyDown=function(e){
+				
 				var keyCode = e.keyCode;
 				var specialKey = [BKGM.KEYS.F5,BKGM.KEYS.F12,BKGM.KEYS.BACKSPACE];
 				if(specialKey.indexOf(keyCode)!=-1) return;
 				if(self.animationAdd||self.animationMove) self.cancelAnimation();
-				if(self.gameOver && keyCode == BKGM.KEYS.ENTER) self.resetBoard();
+				if(self.gameOver && keyCode == BKGM.KEYS.ENTER) {
+					_down();
+						// self.resetBoard();
+				}
 				if(self.gameOver) return;
 				e.preventDefault();				
 				for(var i=0;i<controlKey.length;i++){
@@ -115,7 +147,7 @@
 					}
 				}
 			}
-			director.swipe=function(type){
+			this.swipe=function(type){
 				var keyCode;
     			switch(type){
     				case 'UP'	: keyCode=BKGM.KEYS.UP;		break;
@@ -130,38 +162,7 @@
 					}
 				}
 			}
-			// Hammer(director.canvas).on("swipeup", function(e) {
-			//     for(var i=0;i<controlKey.length;i++){
-			// 		if(controlKey[i].indexOf(BKGM.KEYS.UP)!=-1){
-			// 			self.animation(i);
-			// 			break;
-			// 		}
-			// 	}
-			// });
-			// Hammer(director.canvas).on("swipedown", function(e) {
-			//     for(var i=0;i<controlKey.length;i++){
-			// 		if(controlKey[i].indexOf(BKGM.KEYS.DOWN)!=-1){
-			// 			self.animation(i);
-			// 			break;
-			// 		}
-			// 	}
-			// });
-			// Hammer(director.canvas).on("swipeleft", function(e) {
-			//     for(var i=0;i<controlKey.length;i++){
-			// 		if(controlKey[i].indexOf(BKGM.KEYS.LEFT)!=-1){
-			// 			self.animation(i);
-			// 			break;
-			// 		}
-			// 	}
-			// });
-			// Hammer(director.canvas).on("swiperight", function(e) {
-			//     for(var i=0;i<controlKey.length;i++){
-			// 		if(controlKey[i].indexOf(BKGM.KEYS.RIGHT)!=-1){
-			// 			self.animation(i);
-			// 			break;
-			// 		}
-			// 	}
-			// });
+			
 			this.maxScore = 0;
 			var buttonWidth = 100;
 			var buttonHeight = 30;
@@ -189,13 +190,31 @@
 			// 											if(button.AABB.contains(ex,ey))self.resetBoard();
 			// 										}).setVisible(false);
 			// this.addChild(this.replayButton);
-			director.touchStart=function(){
-				if(self.gameOver) 
-					self.resetBoard();
+			this.down=function(){
+				_down();					
 			}
-			director.mouseDown=function(){
-				if(self.gameOver) 
-					self.resetBoard();
+			var _down=function(){
+				if(self.gameOver) {
+					if(self.gameWin){
+						self.maxLvl++;
+						self.resetBoard();
+						self.switchToMainMap();
+					} else {
+						if(self.switchToMainMap) {
+							director.alert({
+					        	width:400,
+					        	height:250,
+					        	fadeOut:1,
+					        	text:"Thua cmnr, chơi lại nhé!",
+					        	oktext:"PLAY",
+					        	ok:function(){
+					        		self.resetBoard();
+					        	}
+					        })
+						}
+					}
+					// self.resetBoard();
+				}
 			}
             return this;
         },
@@ -204,8 +223,31 @@
 			this.gameOver = false;
 			this.gameWin = false;
 			this.score = 0;
-			this.addRandomNumber();
-			this.addRandomNumber();
+			this.star = 0; // init star
+			this.playerMove=[]; // số nước đi của người chơi
+			this.maxMoves=map[this.level].maxMoves; // số nước đi tối đa của người chơi
+			this.pokedex=[];
+
+			// if(map[this.level].delete_count.true){
+			// 	this.countNumber=map[this.level].delete_count.count;
+			// 	this.harvestNumber=0;
+			// 	this.maxHavestNumber=map[this.level].delete_count.max;
+			// }	
+			var listCell=map[this.level].map;
+			for (var i = 0, l =listCell.length; i < l; i++) {
+				var cell=listCell[i];
+				if(cell.type>=0){
+					this.addRandomNumber(i,cell.number,cell.type);
+				}
+			};
+			if(!map[this.level].noInitRandomNumber){
+				this.addRandomNumber();
+				this.addRandomNumber();
+			}
+			// this.addRandomNumber(0,4,3);
+			// this.addRandomNumber(2,8,0);
+			// this.addRandomNumber(1,8,0);
+			this.gameOver = false;
 			this.director.ctx.globalAlpha=1;
 		},
 		animation: function(direction){
@@ -213,6 +255,7 @@
 			var cellList = this.cellList;
 			var boardWidth = this.boardWidth;
 			var boardHeight = this.boardHeight;
+			var move;
 			this.sortCellList();
 			switch(direction){
 				case 0:	//up
@@ -223,16 +266,41 @@
 							var mergeCell = false;
 							var newPosY = 0;
 							var cellEach = cellList[i];
-							if (cellEach.type == 0) {   	// Ô có thể di chuyện // Todo: type -> canMove
+							if (cellEach.moveable == 0) {   	// Ô có thể di chuyện // Todo: type -> canMove
 								for(var j=i-1;j>=0;j--){
 									if(cellList[j].positionX==cellEach.positionX){
-										if((cellList[j].number==cellEach.number)&&(cellList[j].newNumber==cellEach.number)) {
+										if(mapType[cellList[j].type][cellEach.type]&& // Nếu hai ô ghép đc
+											(	cellEach.type == 3 ||
+												cellList[j].type == 3 ||
+												cellEach.type == 5 ||
+												cellList[j].type == 5 ||
+												(cellList[j].number==cellEach.number)&&(cellList[j].newNumber==cellEach.number))
+											) {
 											console.log('up:1')
 											mergeCell = true;
 											newPosY = cellList[j].positionY;
 											cellList[j].deleted = true;
-											cellEach.newNumber=2*cellEach.number;
-											cellList[j].newNumber=2*cellEach.number;
+											if(cellList[j].type==1){
+												if(cellEach.level<2)cellEach.level++;
+											} else
+											if(cellEach.type==3||cellList[j].type==3){												
+												if(cellEach.type!=3) this.pokedex.push(cellEach.newNumber);
+												else this.pokedex.push(cellList[j].newNumber);
+												cellEach.deleted=true;
+												cellEach.positionX=-1;
+												cellList[j].positionX=-1;
+											}
+											if(cellEach.type==6||cellList[j].type==6||cellList[j].type==7) {
+													cellEach.type=cellList[j].type=6;
+													this.hasBomb=true;
+													cellEach.newNumber=0.5*cellEach.number;
+													cellList[j].newNumber=0.5*cellEach.number;
+													cellEach.bomb=true;
+													// cellEach.number=cellEach.number*0.5;
+											} else {
+												cellEach.newNumber=2*cellEach.number;
+												cellList[j].newNumber=2*cellEach.number;
+											}											
 										}
 										else if(cellList[j].positionY == cellEach.positionY-1) {
 											console.log('up:2')
@@ -246,6 +314,7 @@
 									}
 								}
 								if(changePosition){
+									move=0;
 									cellEach.positionY = newPosY;
 									cellEach.newX = cellEach.x;
 									cellEach.newY = (newPosY+1)*this.marginHeight+newPosY*this.cellHeight;
@@ -266,16 +335,41 @@
 							var mergeCell = false;
 							var newPosY = boardHeight-1;
 							var cellEach = cellList[i];
-							if (cellEach.type == 0) {   	// Ô có thể di chuyện // Todo: type -> canMove
+							if (cellEach.moveable == 0) {   	// Ô có thể di chuyện // Todo: type -> canMove
 								for(var j=i+1;j<cellList.length;j++){
 									if(cellList[j].positionX==cellEach.positionX){
-										if((cellList[j].number==cellEach.number)&&(cellList[j].newNumber==cellEach.number)) {
+										if(mapType[cellList[j].type][cellEach.type]&& // Nếu hai ô ghép đc
+											(	cellEach.type == 3 ||
+												cellList[j].type == 3 ||
+												cellEach.type == 5 ||
+												cellList[j].type == 5 ||
+												(cellList[j].number==cellEach.number)&&(cellList[j].newNumber==cellEach.number))
+											) {
 											console.log('down:1')
 											mergeCell = true;
 											newPosY = cellList[j].positionY;
 											cellList[j].deleted = true;
-											cellEach.newNumber=2*cellEach.number;
-											cellList[j].newNumber=2*cellEach.number;
+											if(cellList[j].type==1){
+												if(cellEach.level<2)cellEach.level++;
+											} else
+											if(cellEach.type==3||cellList[j].type==3){												
+												if(cellEach.type!=3) this.pokedex.push(cellEach.newNumber);
+												else this.pokedex.push(cellList[j].newNumber);
+												cellEach.deleted=true;
+												cellEach.positionX=-1;
+												cellList[j].positionX=-1;
+											}
+											if(cellEach.type==6||cellList[j].type==6||cellList[j].type==7) {
+													cellEach.type=cellList[j].type=6;
+													this.hasBomb=true;
+													cellEach.newNumber=0.5*cellEach.number;
+													cellList[j].newNumber=0.5*cellEach.number;
+													cellEach.bomb=true;
+													// cellEach.number=cellEach.number*0.5;
+											} else {
+												cellEach.newNumber=2*cellEach.number;
+												cellList[j].newNumber=2*cellEach.number;
+											}
 										}
 										else if(cellList[j].positionY == cellEach.positionY+1) {
 											console.log('down:2')
@@ -289,6 +383,7 @@
 									}
 								}
 								if(changePosition){
+									move=1;
 									cellEach.positionY = newPosY;
 									cellEach.newX = cellEach.x;
 									cellEach.newY = (newPosY+1)*this.marginHeight+newPosY*this.cellHeight;
@@ -307,7 +402,7 @@
 						if(cellList[i].positionX>0){ 	// Nếu không ở cạnh trái
 							var cellEach = cellList[i];	// Ghi nhận ô hiện tại
 
-							if (cellEach.type == 0) {   	// Ô có thể di chuyện // Todo: type -> canMove
+							if (cellEach.moveable == 0) {   	// Ô có thể di chuyện // Todo: type -> canMove
 								var changePosition = true; 	// Mặc định chạy về đầu
 								var mergeCell = false; 		// Mặc định không gộp 2 ô với nhau
 								var newPosX = 0; 			// Khởi tạo vị trí mới
@@ -315,15 +410,40 @@
 									if(cellList[j].positionY==cellEach.positionY){
 										// Điều kiện gộp
 										if(//(cellList[j].layer==cellEach.layer)&& // Nếu hai ô cùng layer
+											mapType[cellList[j].type][cellEach.type]&& // Nếu hai ô ghép đc
 											// Nếu hai ô cùng số
-											(cellList[j].number==cellEach.number)&&	
-											(cellList[j].newNumber==cellEach.number)) {
+											(	cellEach.type == 3 ||
+												cellList[j].type == 3 ||
+												cellEach.type == 5 ||
+												cellList[j].type == 5 ||
+												(cellList[j].number==cellEach.number)&&(cellList[j].newNumber==cellEach.number))
+											) {
 											console.log('left:1')
 											mergeCell = true;					// Ghi nhận gộp 2 ô
 											newPosX = cellList[j].positionX;	// Ghi nhận vị trí mới của ô cellEach
 											cellList[j].deleted = true;			// Ghi nhận xóa ô bên trái
-											cellEach.newNumber=2*cellEach.number;	// Ghi nhận giá trị mới
-											cellList[j].newNumber=2*cellEach.number;// GHi nhận giá trị mới
+											if(cellList[j].type==1){
+												if(cellEach.level<2)cellEach.level++;
+											} else
+											if(cellEach.type==3||cellList[j].type==3){												
+												if(cellEach.type!=3) this.pokedex.push(cellEach.newNumber);
+												else this.pokedex.push(cellList[j].newNumber);
+												cellEach.deleted=true;
+												cellEach.positionY=-1;
+												cellList[j].positionY=-1;
+											}
+											if(cellEach.type==6||cellList[j].type==6||cellList[j].type==7) {
+													cellEach.type=cellList[j].type=6;
+													this.hasBomb=true;
+													cellEach.newNumber=0.5*cellEach.number;
+													cellList[j].newNumber=0.5*cellEach.number;
+													cellEach.bomb=true;
+													// cellEach.number=cellEach.number*0.5;
+											} else {
+												cellEach.newNumber=2*cellEach.number;	// Ghi nhận giá trị mới
+												cellList[j].newNumber=2*cellEach.number;// GHi nhận giá trị mới
+											}
+											
 										}
 										// Điều kiện không di chuyển
 										// Hai ô không gộp nhưng đứng cạnh nhau
@@ -339,6 +459,7 @@
 								}
 
 								if (changePosition) { // Nếu được ghi nhận cần di chuyển
+									move=2; // Lưu hành động người dùng ấn phím sang trái và vị trí ô thay đổi
 									cellEach.positionX = newPosX; // Cập nhật vị trí mới
 									// Ghi nhận vị trí mới để di chuyển đến
 									// cellEach.newY = cellEach.y;
@@ -361,16 +482,42 @@
 							var mergeCell = false;
 							var newPosX = boardWidth-1;
 							var cellEach = cellList[i];
-							if (cellEach.type == 0) {   	// Ô có thể di chuyện // Todo: type -> canMove
+							if (cellEach.moveable == 0) {   	// Ô có thể di chuyện // Todo: type -> canMove
 								for(var j=i+1;j<cellList.length;j++){
 									if(cellList[j].positionY==cellEach.positionY){
-										if((cellList[j].number==cellEach.number)&&(cellList[j].newNumber==cellEach.number)) {
+										if(mapType[cellList[j].type][cellEach.type]&& // Nếu hai ô ghép đc
+											(	cellEach.type == 3 ||
+												cellList[j].type == 3 ||
+												cellEach.type == 5 ||
+												cellList[j].type == 5 ||
+												(cellList[j].number==cellEach.number)&&(cellList[j].newNumber==cellEach.number))
+											) {
 											console.log('right:1')
 											mergeCell = true;
 											newPosX = cellList[j].positionX;
 											cellList[j].deleted = true;
-											cellEach.newNumber=2*cellEach.number;
-											cellList[j].newNumber=2*cellEach.number;
+
+											if(cellList[j].type==1){
+												if(cellEach.level<2)cellEach.level++;
+											} else
+											if(cellEach.type==3||cellList[j].type==3){												
+												if(cellEach.type!=3) this.pokedex.push(cellEach.newNumber);
+												else this.pokedex.push(cellList[j].newNumber);
+												cellEach.deleted=true;
+												cellEach.positionY=-1;
+												cellList[j].positionY=-1;
+											}
+											if(cellEach.type==6||cellList[j].type==6||cellList[j].type==7) {
+													cellEach.type=cellList[j].type=6;
+													this.hasBomb=true;
+													cellEach.newNumber=0.5*cellEach.number;
+													cellList[j].newNumber=0.5*cellEach.number;
+													cellEach.bomb=true;
+													// cellEach.number=cellEach.number*0.5;
+											} else {
+												cellEach.newNumber=2*cellEach.number;	// Ghi nhận giá trị mới
+												cellList[j].newNumber=2*cellEach.number;// GHi nhận giá trị mới
+											}
 										}
 										else if(cellList[j].positionX == cellEach.positionX+1) {
 											console.log('right:2')
@@ -384,6 +531,7 @@
 									}
 								}
 								if(changePosition){
+									move=3;
 									cellEach.positionX = newPosX;
 									cellEach.newY = cellEach.y;
 									cellEach.newX = (newPosX+1)*this.marginWidth+newPosX*this.cellWidth;
@@ -397,8 +545,10 @@
 					}
 					break;
 			}
+			if(typeof move!="undefined") this.playerMove.push(move);
+			// console.log(this.playerMove)
 		},
-		initCell: function(cellIndex,type,layer){
+		initCell: function(cellIndex,type){
 			var positionX = cellIndex%this.boardWidth;
 			var positionY = (cellIndex/this.boardWidth)<<0;
 			var tempCell = {};
@@ -410,9 +560,10 @@
 			tempCell.height = this.cellHeight;
 			tempCell.positionX = positionX;
 			tempCell.positionY = positionY;
-			tempCell.type=type;
-			tempCell.layer=layer||0;
+			tempCell.type=typeof type==='undefined' ? -1 : type;
+			tempCell.moveable=tempCell.type<0 ? 1 : mapMovable[tempCell.type];
 			tempCell.id = cellIndex;
+			tempCell.level=0;
 			return tempCell;
 		},
 		sortCellList: function(){
@@ -423,7 +574,7 @@
 				return 0;
 			});
 		},
-		addRandomNumber: function(){
+		addRandomNumber: function(randomIndex,number,randomType){
 			var indexArr = [];
 			for(var i=0;i<this.cellList.length;i++) {
 				indexArr.push(this.cellList[i].id);
@@ -431,12 +582,15 @@
 			}
 			var randomArr = randomArrayList(this.boardHeight*this.boardWidth);
 			var diffArray = arrayDiff(randomArr,indexArr);
-			var randomIndex = diffArray[randomNumber(diffArray.length)];
-			var randomType=Math.random()*2>>0;
-			var newCell = this.initCell(randomIndex,randomType,0);
+			var randomIndex = typeof randomIndex === "undefined"? diffArray[randomNumber(diffArray.length)] : randomIndex;
+			var randomCell=new randomForCell(this.level);
+			var randomType =typeof randomType === "undefined"? (randomCell.type) : randomType;
+			var newCell = this.initCell(randomIndex,randomType);
 			numberArray = [2,4,8,16,32,64,128,256,512];
 			//newCell.number =  numberArray[randomNumber(numberArray.length)];
-			newCell.number =  Math.random() < 0.9 ? 2 : 4;
+			if (randomType==3) number=0;
+			newCell.number =  typeof number === "undefined"? (randomCell.number) : number;
+
 			newCell.newNumber =  newCell.number;
 			newCell.animationAdd = true;
 			newCell.animationStart = this.director.time;
@@ -449,26 +603,86 @@
 			return this;
 		},
 		checkWin: function(){
-			var cellList = this.cellList;
-			for(var i=0;i<cellList.length;i++){
-				if(cellList[i].number==2048) {
-					this.gameWin = true;
-					this.gameOver = true;
-					this.gameOverTime = this.director.time;
-					break;
-				}
-			}
+			
+			// this.fnList=[function(){console.log(this)}];
+			if(map[this.level].win(BKGM.fnListWin)){
+				this.gameWin = true;
+				// this.gameOverTime = this.director.time;
+				// if(this.level<map.length-1){
+				// 	this.level++;
+				// }
+			};
+			// var cellList = this.cellList;
+			// for(var i=0;i<cellList.length;i++){
+			// 	if(cellList[i].number==2048) {
+					
+			// 	}
+			// }
+			// console.log("Star: "+this.star)
 		},
 		checkLost: function(){
-			if(this.cellList.length!=this.boardHeight*this.boardWidth) return;
+			// if(this.cellList.length!=this.boardHeight*this.boardWidth) return;
 			this.sortCellList();
-			for(var i=0;i<this.cellList.length;i++){
+			// console.log(this.cellList)
+			if(map[this.level].lost(BKGM.fnListLost)){
+				this.gameOver = true;
+				this.gameOverTime = this.director.time;
+				return;
+			};
+			for(var i=0, l=this.cellList.length; i < l; i++){
 				var cellEach = this.cellList[i];
-				if((cellEach.positionX>0)&&(cellEach.number==this.cellList[i-1].number)) return;
-				if((cellEach.positionY>0)&&(cellEach.number==this.cellList[i-this.boardWidth].number)) return;
-				if((cellEach.positionX<this.boardWidth-1)&&(cellEach.number==this.cellList[i+1].number)) return;
-				if((cellEach.positionY<this.boardHeight-1)&&(cellEach.number==this.cellList[i+this.boardWidth].number)) return;
+				if(cellEach.moveable==0){
+					// Neu o ben canh cung hang
+					if (this.cellList[i+1] && this.cellList[i+1].positionY==cellEach.positionY) {
+						// Neu o ben canh khong o ngay sat ben phai
+						if(this.cellList[i+1].positionX!= cellEach.positionX+1) return;
+						// Neu o ben canh o sat ben phai va cung so
+						else if(this.cellList[i+1].number==cellEach.number&&mapType[this.cellList[i+1].type][cellEach.type]) return;
+					// Neu o ben canh khong cung hang va o hien tai khong o sat ben phai
+					} else if (cellEach.positionX != this.boardWidth-1) return;
+					
+					// Neu o truoc do cung hang
+					if (this.cellList[i-1] && this.cellList[i-1].positionY==cellEach.positionY) {
+						// Neu o truoc do khong o ngay sat ben trai
+						if(this.cellList[i-1].positionX!= cellEach.positionX-1) return;
+						// Neu o truoc do o sat ben trai va cung so
+						else if(this.cellList[i-1].number==cellEach.number&&mapType[this.cellList[i-1].type][cellEach.type]) return;
+					// Neu o truoc do khong cung hang va o hien tai khong o sat ben trai
+					} else if (cellEach.positionX != 0) return;
+
+					if (cellEach.positionY != 0) {
+						var found = false;
+						for (var j = i-1; j >=0; j--) {
+							var cell = this.cellList[j];
+							if(cell.positionX==cellEach.positionX){
+								if ((cell.positionY===cellEach.positionY-1 && cell.number!=cellEach.number) || !mapType[cell.type][cellEach.type]) found = true;
+								else return;
+								break;
+							}
+						};
+						if (found == false) return;
+					}
+					if (cellEach.positionY != this.boardHeight-1) {
+						var found = false;
+						for (var j = i+1; j <l; j++) {
+							var cell = this.cellList[j];
+							if(cell.positionX==cellEach.positionX){
+								if ((cell.positionY===cellEach.positionY+1 && cell.number!=cellEach.number) || !mapType[cell.type][cellEach.type]) found = true;
+								else return;
+								break;
+							}
+						};
+						if (found == false) return;
+					}
+					
+					// if(&&this.cellList[i-1]&&(cellEach.number==this.cellList[i-1].number)) return;
+					// if(&&this.cellList[i-this.boardWidth]&&(cellEach.number==this.cellList[i-this.boardWidth].number)) return;
+					// if(&&this.cellList[i+1]&&(cellEach.number==this.cellList[i+1].number)) return;
+					// if(&&this.cellList[i+this.boardWidth]&&(cellEach.number==this.cellList[i+this.boardWidth].number)) return;
+				}
+				
 			}
+			//if(!lost()) return
 			this.gameOver = true;
 			this.gameOverTime = this.director.time;
 		},
@@ -497,15 +711,139 @@
 			var tempCellList = [];
 			for(var i=0;i<this.cellList.length;i++){
 				var cellEach = this.cellList[i];
+				// // trường hợp thu hoạch số
+				// if((!this.maxHavestNumber || this.harvestNumber<this.maxHavestNumber)&&(cellEach.newNumber==this.countNumber&& !cellEach.deleted)) {
+				// 	cellEach.deleted=true;
+				// 	this.harvestNumber++;
+				// }				
 				if(!cellEach.deleted) tempCellList.push(cellEach);
 			}
 			this.cellList = tempCellList;
-			for(var i=0;i<this.cellList.length;i++){
+			for(var i=0, l=this.cellList.length;i<l;i++){
 				var cellEach = this.cellList[i];
 				if(cellEach.number!=cellEach.newNumber) {
 					this.score+= cellEach.newNumber;
 					if(this.maxScore<this.score) this.maxScore = this.score;
 					cellEach.number = cellEach.newNumber;
+				}
+			}
+			while (this.hasBomb){
+				this.sortCellList();
+				this.hasBomb=false;
+				for(var i=0, l=this.cellList.length;i<l;i++){
+					var cellEach = this.cellList[i];
+								
+					// Nếu là bom
+					if(cellEach.bomb&&(cellEach.type==6||cellEach.type==7)){
+						cellEach.deleted=true;
+						var cellRight=this.cellList[i+1];
+						// Neu o ben canh cung hang					
+						if (cellRight && cellRight.positionY==cellEach.positionY) {
+							// Neu o ben canh o sat ben phai va không phải siêu cứng
+							if(cellRight.positionX== cellEach.positionX+1&&cellRight.type!=4) {
+								if(cellRight.type==6||cellRight.type==7) {
+									this.hasBomb=true;
+									cellRight.bomb=true;
+								} else
+								cellRight.deleted=true;
+								
+							};
+						
+						}
+						
+						var cellLeft=this.cellList[i-1]
+						// Neu o truoc do cung hang
+						if (cellLeft && cellLeft.positionY==cellEach.positionY) {
+							// Neu o truoc do khong o ngay sat ben trai va không phải siêu cứng
+							if(cellLeft.positionX== cellEach.positionX-1&&cellLeft.type!=4) {
+								if(cellLeft.type==6||cellLeft.type==7) {
+									this.hasBomb=true;
+									cellLeft.bomb=true;
+								} else
+									cellLeft.deleted=true;
+								
+							};
+						}
+
+						if (cellEach.positionY != 0) {
+							for (var j = i-1; j >=0; j--) {
+								var cell = this.cellList[j];
+								if(cell.type!=4 && cell.positionX==cellEach.positionX&&cell.positionY===cellEach.positionY-1){								
+									
+									var cellLeft=this.cellList[j-1];
+									if(cellLeft && cellLeft.positionY==cell.positionY && cellLeft.positionX== cell.positionX-1&&cellLeft.type!=4) {
+										if(cellLeft.type==6||cellLeft.type==7) {
+											this.hasBomb=true;
+											cellLeft.bomb=true;
+										} else
+											cellLeft.deleted=true;
+										
+									}
+									var cellRight=this.cellList[j+1];
+									if(cellRight && cellRight.positionY==cell.positionY && cellRight.positionX== cell.positionX+1&&cellRight.type!=4) {
+										if(cellRight.type==6||cellRight.type==7) {
+											this.hasBomb=true;
+											cellRight.bomb=true;
+										} else
+										cellRight.deleted=true;
+										
+									}
+									if(cell.type==6||cell.type==7) {
+										this.hasBomb=true;
+										cell.bomb=true;
+									} else
+										cell.deleted=true;
+									break;															
+								}
+							};
+						}
+						if (cellEach.positionY != this.boardHeight-1) {
+							for (var j = i+1; j <l; j++) {
+								var cell = this.cellList[j];
+								if(cell.type!=4 && cell.positionX==cellEach.positionX&&cell.positionY===cellEach.positionY+1){
+									
+									var cellLeft=this.cellList[j-1];
+									if(cellLeft && cellLeft.positionY==cell.positionY && cellLeft.positionX== cell.positionX-1&&cellLeft.type!=4) {
+										if(cellLeft.type==6||cellLeft.type==7) {
+											this.hasBomb=true;
+											cellLeft.bomb=true;
+										} else
+											cellLeft.deleted=true;
+										
+									}
+									var cellRight=this.cellList[j+1];
+									if(cellRight && cellRight.positionY==cell.positionY && cellRight.positionX== cell.positionX+1&&cellRight.type!=4) {
+										if(cellRight.type==6||cellRight.type==7) {
+											this.hasBomb=true;
+											cellRight.bomb=true;
+										} else
+										cellRight.deleted=true;
+										
+									}
+									if(cell.type==6||cell.type==7) {
+										this.hasBomb=true;
+										cell.bomb=true;
+									} else
+										cell.deleted=true;
+									break;	
+								}
+							};
+						}
+					}
+				}
+				var tempCellList = [];
+				for(var i=0;i<this.cellList.length;i++){
+					var cellEach = this.cellList[i];	
+					if(!cellEach.deleted) tempCellList.push(cellEach);
+				}
+				this.cellList = tempCellList;
+				for(var i=0, l=this.cellList.length;i<l;i++){
+					var cellEach = this.cellList[i];
+					if(cellEach.number!=cellEach.newNumber) {
+						this.score+= cellEach.newNumber;
+						if(this.maxScore<this.score) this.maxScore = this.score;
+						cellEach.number = cellEach.newNumber;
+					}
 				}
 			}
 			this.checkWin();
@@ -519,19 +857,38 @@
 			ctx.fillRect(0,0,this.width,this.height);
 			ctx.fillStyle = "#000";
 			ctx.font = "20px Arial";
+			var movecount=this.maxMoves-this.playerMove.length;
 			if(director.WIDTH<director.HEIGHT) {
 				ctx.fillText("SCORE: "+this.score, 60,this.height + 40);
 				ctx.fillText("HIGHSCORE: "+this.maxScore,60,this.height + 80);
+				ctx.fillText("Move: "+movecount,60,this.height + 120);
+				ctx.fillText("Mission: "+ map[this.level].text,60,this.height + 160);
+				ctx.fillText("Star: "+ this.star,60,this.height + 200);
+				for (var i = this.pokedex.length - 1; i >= 0; i--) {
+					var poke=cellColor[0][this.pokedex[i]];
+					ctx.drawImage(poke.bg,60+i*70,this.height + 300,60,60)
+				};
+				// ctx.fillText("Star: "+ this.star,60,this.height + 300);
 			} else {
 				ctx.fillText("SCORE: "+this.score, this.height + 20,30);
 				ctx.fillText("HIGHSCORE: "+this.maxScore,this.width + 20,60);
+				ctx.fillText("Move: "+movecount,this.width + 20,90);
+				ctx.fillText("Mission: "+ map[this.level].text,this.width + 20,120);
+				ctx.fillText("Star: "+ this.star,this.width + 20,150);
+				for (var i = this.pokedex.length - 1; i >= 0; i--) {
+					var poke=cellColor[0][this.pokedex[i]];
+					var img=director.resource.images[poke.bg];
+					ctx.drawImage(img,this.width + 20 + i*70,200,60,60)
+				};
 			}
 
 			
 			for(var i=0;i<this.cellBoard.length;i++){
 				var tempCell = this.cellBoard[i];
-				ctx.fillStyle = "rgb(204,192,179)";
-				ctx.fillRect(tempCell.x,tempCell.y,tempCell.width,tempCell.height);
+				// ctx.fillStyle = "rgb(204,192,179)";
+				// ctx.fillRect(tempCell.x,tempCell.y,tempCell.width,tempCell.height);
+				// director.resource.images
+				ctx.drawImage(director.resource.images['bg'],tempCell.x-10,tempCell.y-10,tempCell.width+20,tempCell.height+20)
 			}
 			var endMove = false;
 			for(var i=0;i<this.cellList.length;i++){
@@ -576,16 +933,92 @@
 				}
 				
 				var text = tempCell.number;
-				var color = numberColor[text];
-				if(typeof color == "undefined") color = numberColor[2];
-				if(tempCell.type==1) color=numberColor['den'];
-				ctx.fillStyle = color.bg;
-				ctx.fillRect(rectX,rectY,rectWidth,rectHeight);
-				ctx.font = textSize+"px Arial";
-				ctx.fillStyle = color.number;
-				var textWidth = ctx.measureText(text).width;
-				// console.log(textSize)
-				ctx.fillText(text,rectX + rectWidth/2 - textWidth/2,rectY + rectHeight/2+textSize/3);
+				var tmptype=tempCell.type;
+				
+				
+				switch (tmptype){
+					case 0:			
+							var color = cellColor[tmptype][text];		
+							var img=director.resource.images[color.bg];
+							ctx.drawImage(img,rectX,rectY,rectWidth,rectHeight);		
+							// if(typeof color == "undefined") color = numberColor[2];
+							// // if(tempCell.moveable==1) color=numberColor['den'];
+							// ctx.fillStyle = color.bg;
+							// ctx.fillRect(rectX,rectY,rectWidth,rectHeight);
+							// ctx.font = textSize+"px Arial";
+							// ctx.fillStyle = color.number;
+							// var textWidth = ctx.measureText(text).width;
+							// // console.log(textSize)
+							// ctx.fillText(text,rectX + rectWidth/2 - textWidth/2,rectY + rectHeight/2+textSize/3);
+							break;
+					case 1:
+							var color = cellColor[tmptype][text];
+							var img=director.resource.images[color.bg];
+							ctx.drawImage(img,rectX,rectY,rectWidth,rectHeight);
+							// ctx.font = textSize+"px Arial";
+							// ctx.fillStyle = color.number;
+							// var textWidth = ctx.measureText(text).width;
+							// // console.log(textSize)
+							// ctx.fillText(text,rectX + rectWidth/2 - textWidth/2,rectY + rectHeight/2+textSize/3);
+							break;					
+					case 2:
+							var color = cellColor[tmptype][text];
+							var img=director.resource.images[color.bg];
+							ctx.drawImage(img,rectX,rectY,rectWidth,rectHeight);
+							break;
+					case 3:
+							var color = cellColor[tmptype][text];
+							var img=director.resource.images[color.bg];
+							ctx.drawImage(img,rectX,rectY,rectWidth,rectHeight);
+							// var color = cellColor[tmptype][text];
+							// ctx.fillStyle = color.bg;
+							// ctx.fillRect(rectX,rectY,rectWidth,rectHeight);
+							// ctx.font = textSize+"px Arial";
+							// ctx.fillStyle = color.number;
+							// var textWidth = ctx.measureText(text).width;
+							// // console.log(textSize)
+							// ctx.fillText(text,rectX + rectWidth/2 - textWidth/2,rectY + rectHeight/2+textSize/3);
+							break;
+					case 4:
+							ctx.beginPath();
+							ctx.fillStyle="#000";
+							ctx.fillRect(rectX,rectY,rectWidth,rectHeight);
+							break;
+					case 5:
+							ctx.beginPath();
+							ctx.fillStyle="#f00000";
+							ctx.fillRect(rectX,rectY,rectWidth,rectHeight);
+							ctx.font = textSize+"px Arial";
+							ctx.fillStyle = "#0e0e0e";
+							var text="X2";
+							var textWidth = ctx.measureText(text).width;
+							ctx.fillText(text,rectX + rectWidth/2 - textWidth/2,rectY + rectHeight/2+textSize/3);
+							break;
+					case 6:
+					//console.log(cellColor[tmptype],text)
+							var color = cellColor[tmptype][0];
+							ctx.fillStyle = color.bg;
+							ctx.fillRect(rectX,rectY,rectWidth,rectHeight);
+							ctx.font = textSize+"px Arial";
+							ctx.fillStyle = color.number;
+							var textWidth = ctx.measureText(text).width;
+							// console.log(textSize)
+							ctx.fillText(text,rectX + rectWidth/2 - textWidth/2,rectY + rectHeight/2+textSize/3);
+							break;
+					case 7:
+					//console.log(cellColor[tmptype],text)
+							var color = cellColor[tmptype][0];
+							ctx.fillStyle = color.bg;
+							ctx.fillRect(rectX,rectY,rectWidth,rectHeight);
+							ctx.font = textSize+"px Arial";
+							ctx.fillStyle = color.number;
+							var textWidth = ctx.measureText(text).width;
+							// console.log(textSize)
+							ctx.fillText(text,rectX + rectWidth/2 - textWidth/2,rectY + rectHeight/2+textSize/3);
+							break;
+				}
+				
+				
 			}
 			if(this.gameOver){
 				var elapsedTime = director.time - this.gameOverTime;
@@ -595,7 +1028,7 @@
 				ctx.fillStyle = "#FFF";
 				ctx.fillRect(0,0,this.width,this.height);
 				ctx.fillStyle = "#555";
-				var text = (this.gameWin)?"You win!!!":"Game over....";
+				var text = (this.gameWin)?("You win with "+this.star+" star"):"Game over....";
 				var textSize = 40;
 				ctx.font = textSize+"px Arial";
 				ctx.fillText(text,this.width/2-ctx.measureText(text).width/2,this.height/2-textSize/4*3);
@@ -605,6 +1038,70 @@
         }
     }
 })();
+var cellColor ={
+	// 0:{
+	// 	2:{bg: "A", number: "rgb(119,110,101)"},
+	// 	4:{bg: "B", number: "rgb(119,110,101)"},
+	// 	8:{bg: "C", number: "rgb(249,246,242)"},
+	// 	16:{bg: "D", number: "rgb(249,246,242)"},
+	// 	32:{bg: "E", number: "rgb(249,246,242)"},
+	// 	64:{bg: "rgb(246,94,59)", number: "rgb(249,246,242)"},
+	// 	128:{bg: "rgb(237,207,114)", number: "rgb(249,246,242)"},
+	// 	256:{bg: "rgb(237,204,97)", number: "rgb(249,246,242)"},
+	// 	512:{bg: "rgb(237,200,80)", number: "rgb(249,246,242)"},
+	// 	1024:{bg: "rgb(246,169,69)", number: "rgb(249,246,242)"},
+	// 	2048:{bg: "rgb(254,150,80)", number: "rgb(249,246,242)"}
+	// },
+	0:{
+		2:{bg: "frame28", number: "rgb(119,110,101)"},
+		4:{bg: "frame5", number: "rgb(119,110,101)"},
+		8:{bg: "frame8", number: "rgb(249,246,242)"},
+		16:{bg: "frame11", number: "rgb(249,246,242)"},
+		32:{bg: "frame2", number: "rgb(249,246,242)"},
+		64:{bg: "rgb(246,94,59)", number: "rgb(249,246,242)"},
+		128:{bg: "rgb(237,207,114)", number: "rgb(249,246,242)"},
+		256:{bg: "rgb(237,204,97)", number: "rgb(249,246,242)"},
+		512:{bg: "rgb(237,200,80)", number: "rgb(249,246,242)"},
+		1024:{bg: "rgb(246,169,69)", number: "rgb(249,246,242)"},
+		2048:{bg: "rgb(254,150,80)", number: "rgb(249,246,242)"}
+	},
+	1:{
+		2:{bg: "element0004", number: "rgb(119,110,101)"},
+		4:{bg: "element0011", number: "rgb(119,110,101)"},
+		8:{bg: "element0012", number: "rgb(249,246,242)"},
+		16:{bg: "element0013", number: "rgb(249,246,242)"},
+		32:{bg: "element0014", number: "rgb(249,246,242)"},
+		64:{bg: "element0015", number: "rgb(249,246,242)"},
+		128:{bg: "element0016", number: "rgb(249,246,242)"},
+		256:{bg: "element0017", number: "rgb(249,246,242)"},
+		512:{bg: "element0018", number: "rgb(249,246,242)"},
+		1024:{bg: "element0019", number: "rgb(249,246,242)"},
+		2048:{bg: "element0020", number: "rgb(249,246,242)"}
+	},
+	2:{
+		2:{bg: "brick", number: "rgb(119,110,101)"},
+		4:{bg: "brick", number: "rgb(119,110,101)"},
+		8:{bg: "brick", number: "rgb(249,246,242)"},
+		16:{bg: "brick", number: "rgb(249,246,242)"},
+		32:{bg: "brick", number: "rgb(249,246,242)"},
+		64:{bg: "brick", number: "rgb(249,246,242)"},
+		128:{bg: "brick", number: "rgb(249,246,242)"},
+		256:{bg: "brick", number: "rgb(249,246,242)"},
+		512:{bg: "brick", number: "rgb(249,246,242)"},
+		1024:{bg: "brick", number: "rgb(249,246,242)"},
+		2048:{bg: "brick", number: "rgb(249,246,242)"}
+	},
+	3:{
+		0:{bg: "ball", number: "rgb(119,110,101)"}
+	},
+	6:{
+		0:{bg: "rgb(0,0,218)", number: "rgb(119,110,101)"}
+	},
+	7:{
+		0:{bg: "rgb(0,218,218)", number: "rgb(119,110,101)"}
+	}
+
+}
 var numberColor = {
 	'den':{bg: "rgb(0,0,0)", number: "rgb(255,255,255)"},
 	2:{bg: "rgb(238,228,218)", number: "rgb(119,110,101)"},
